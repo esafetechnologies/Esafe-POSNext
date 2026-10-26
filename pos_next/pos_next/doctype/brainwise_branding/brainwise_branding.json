@@ -45,7 +45,7 @@
    "fieldname": "master_key_help",
    "fieldtype": "HTML",
    "label": "Master Key Help",
-   "options": "<div class=\"alert alert-warning\"><strong>\ud83d\udd12 Protected Configuration:</strong><br><br>\u2022 To <strong>disable branding</strong>, uncheck 'Enabled' and provide the Master Key<br>\u2022 To <strong>modify branding fields</strong> (text, name, URL, interval), provide the Master Key<br>\u2022 Master Key format: <code>{\"key\": \"...\", \"phrase\": \"...\"}</code><br><br>\u26a0\ufe0f The Master Key is not stored in the system and must be kept secure.<br>\ud83d\udce7 Contact BrainWise support if you've lost the key.</div>"
+   "options": "<div class=\"alert alert-warning\"><strong>\ud83d\udd12 Protected Configuration:</strong><br><br>\u2022 To <strong>disable branding</strong>, uncheck 'Enabled' and provide the Master Key<br>\u2022 To <strong>modify branding fields</strong> (text, name, URL, interval), provide the Master Key<br>\u2022 Master Key format: <code>{\"key\": \"...\", \"phrase\": \"...\"}</code><br><br>\u26a0\ufe0f The Master Key is not stored in the system and must be kept secure.<br>Contact your system administrator if you've lost the key.</div>"
   },
   {
    "description": "Required to disable branding OR modify any branding configuration fields. The key will NOT be stored after validation.",
@@ -73,7 +73,7 @@
    "reqd": 1
   },
   {
-   "default": "BrainWise",
+   "default": "Esafe Solutions",
    "fieldname": "brand_name",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -82,7 +82,7 @@
    "reqd": 1
   },
   {
-   "default": "https://nexus.brainwise.me",
+   "default": "https://esafesolutions.co",
    "fieldname": "brand_url",
    "fieldtype": "Data",
    "label": "Brand URL",

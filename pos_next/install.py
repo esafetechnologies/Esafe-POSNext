@@ -51,6 +51,9 @@ def after_migrate():
 		# Setup default print format
 		setup_default_print_format(quiet=True)
 
+		# Keep the protected footer branding aligned with the shipped product name.
+		update_footer_branding()
+
 		# Clear cache
 		frappe.clear_cache()
 		frappe.db.commit()
@@ -61,6 +64,23 @@ def after_migrate():
 		frappe.log_error(title="POS Next Migration Error", message=frappe.get_traceback())
 		log_message(f"POS Next: Migration error - {str(e)}", level="error")
 		raise
+
+
+def update_footer_branding():
+	"""Update the saved footer configuration on existing sites."""
+	if not frappe.db.exists("DocType", "BrainWise Branding"):
+		return
+
+	doc = frappe.get_single("BrainWise Branding")
+	doc.brand_text = "Powered by"
+	doc.brand_name = "Esafe Solutions"
+	doc.brand_url = "https://esafesolutions.co"
+	doc.generate_signature()
+
+	for fieldname in ("brand_text", "brand_name", "brand_url", "encryption_key", "encrypted_signature"):
+		frappe.db.set_single_value(
+			"BrainWise Branding", fieldname, doc.get(fieldname), update_modified=False
+		)
 
 
 def setup_default_print_format(quiet=False):

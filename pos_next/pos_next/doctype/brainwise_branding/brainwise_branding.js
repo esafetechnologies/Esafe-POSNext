@@ -3,6 +3,8 @@
 
 frappe.ui.form.on("BrainWise Branding", {
 	refresh: function (frm) {
+		frm.page.set_title(__("ESAFE POS Branding"));
+
 		// Add custom buttons and UI elements
 		add_master_key_controls(frm);
 
@@ -157,7 +159,7 @@ function show_master_key_help() {
 	const help_html = `
 		<div class="master-key-help">
 			<h4>🔐 Master Key System</h4>
-			<p>The BrainWise branding is protected by a cryptographic master key system.</p>
+			<p>The ESAFE POS branding settings are protected by a cryptographic master key system.</p>
 
 			<h5>Protected Fields:</h5>
 			<ul>
@@ -190,7 +192,7 @@ function show_master_key_help() {
 
 			<div class="alert alert-warning">
 				<strong>⚠️ Lost Your Master Key?</strong><br>
-				Contact BrainWise support at <a href="mailto:support@brainwise.me">support@brainwise.me</a>
+				Contact your system administrator if you have lost the master key.
 			</div>
 		</div>
 	`;
