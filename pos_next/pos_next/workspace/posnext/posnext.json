@@ -10,7 +10,7 @@
  "idx": 0,
  "indicator_color": "green",
  "is_hidden": 0,
- "label": "POSNext",
+ "label": "Esafe POS",
  "links": [
   {
    "hidden": 0,
@@ -267,5 +267,5 @@
    "type": "DocType"
   }
  ],
- "title": "POSNext"
+ "title": "Esafe POS"
 }

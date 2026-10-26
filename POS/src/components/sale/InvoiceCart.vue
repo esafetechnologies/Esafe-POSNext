@@ -1464,7 +1464,7 @@
 						'flex-1 py-2.5 px-3 rounded-lg font-bold text-xs text-white transition-all flex items-center justify-center touch-manipulation',
 						items.length === 0
 							? 'bg-gray-300 cursor-not-allowed'
-							: 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800 shadow-lg hover:shadow-xl active:scale-[0.98]',
+							: 'bg-esafe-navy hover:bg-indigo-800 active:bg-indigo-900 shadow-lg hover:shadow-xl active:scale-[0.98]',
 					]"
 					:aria-label="__('Proceed to payment')"
 				>

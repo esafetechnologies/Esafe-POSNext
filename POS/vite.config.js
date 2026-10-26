@@ -75,11 +75,11 @@ export default defineConfig({
 			// Registered from main.js at /pos-sw.js so its scope covers the /pos page
 			injectRegister: false,
 			manifest: {
-				name: "POSNext",
-				short_name: "POSNext",
+				name: "Esafe POS",
+				short_name: "Esafe POS",
 				description:
 					"Point of Sale system with real-time billing, stock management, and offline support",
-				theme_color: "#4F46E5",
+				theme_color: "#0F1F5C",
 				background_color: "#ffffff",
 				display: "standalone",
 				scope: "/pos",

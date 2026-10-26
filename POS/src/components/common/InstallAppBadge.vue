@@ -20,7 +20,7 @@
 					<div class="flex-shrink-0">
 						<div
 							class="w-10 h-10 rounded-lg flex items-center justify-center shadow-sm"
-							style="background-color: #4f46e5"
+							style="background-color: #0f1f5c"
 						>
 							<svg
 								class="w-6 h-6"
@@ -42,7 +42,7 @@
 							class="text-xs font-semibold mb-0.5 leading-tight"
 							style="color: #111827"
 						>
-							{{ __("Install POSNext") }}
+							{{ __("Install Esafe POS") }}
 						</h3>
 						<p class="text-[10px] leading-tight mb-1" style="color: #4b5563">
 							{{ __("Faster access and offline support") }}
@@ -61,7 +61,7 @@
 						<button
 							@click="handleInstall"
 							class="px-3 py-1.5 text-xs font-medium rounded hover:opacity-90 active:opacity-80 transition-opacity touch-manipulation shadow-sm whitespace-nowrap"
-							style="background-color: #4f46e5; color: #ffffff"
+							style="background-color: #0f766e; color: #ffffff"
 						>
 							{{ __("Install") }}
 						</button>

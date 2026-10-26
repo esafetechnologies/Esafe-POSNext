@@ -150,7 +150,7 @@ db.version(schemaVersion).stores(CURRENT_SCHEMA);
 export const initDB = async () => {
 	try {
 		await db.open();
-		log.success("POS Next offline database initialized");
+		log.success("Esafe POS offline database initialized");
 		return true;
 	} catch (error) {
 		log.error("Failed to initialize offline database:", error);

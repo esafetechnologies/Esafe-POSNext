@@ -772,7 +772,7 @@ function deleteSavedFilter(name) {
 }
 
 .save-btn:hover:not(:disabled) {
-	background: #4f46e5;
+	background: #2563eb;
 }
 
 .save-btn:disabled {
