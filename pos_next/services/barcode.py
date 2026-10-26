@@ -1,10 +1,8 @@
 """
 Barcode resolver service for POS Next.
 
-This module provides an optional integration with the barcode_resolver app.
-When barcode_resolver is installed, it enables advanced barcode parsing
-for weighted and priced barcodes. When not installed, it gracefully
-returns None.
+This module parses common GS1 scale labels directly and can additionally use
+the optional barcode_resolver app for custom weighted and priced formats.
 
 Usage:
     from pos_next.services import resolve_barcode, is_barcode_resolver_available
@@ -15,7 +13,7 @@ Usage:
         if result:
             print(result["item_barcode"], result["qty"])
 
-    # Or simply call resolve_barcode (returns None if app not installed)
+    # Or simply call resolve_barcode (built-in scale labels work without the app)
     result = resolve_barcode("2001234001234")
 """
 
@@ -77,56 +75,87 @@ def resolve_barcode(barcode: str, pos_profile: str) -> BarcodeResult | None:
 
 	Returns:
 	    BarcodeResult dict if the barcode matches a rule, None otherwise.
-	    Also returns None if barcode_resolver app is not installed.
+	    Standard scale labels are supported without barcode_resolver; custom
+	    formats are delegated to that optional app when it is installed.
 
 	Example:
 	    >>> result = resolve_barcode("2001234001500")
 	    >>> if result:
 	    ...     print(f"Item: {result['item_barcode']}, Qty: {result['qty']}")
 	"""
-	if not is_barcode_resolver_available():
-		logger.debug("resolve_barcode: barcode_resolver app not installed")
-		return None
+	if is_barcode_resolver_available():
+		try:
+			from barcode_resolver.barcode_resolver.doctype.barcode_rule.utils import (
+				resolve_barcode as _resolve_barcode,
+			)
+		except ImportError:
+			logger.warning("resolve_barcode: ImportError loading upstream; clearing cache")
+			is_barcode_resolver_available.cache_clear()
+		else:
+			barcode_rules = _get_barcode_rules_for_profile(pos_profile)
+			logger.info(
+				"resolve_barcode: barcode=%r profile=%r rules=%s",
+				barcode,
+				pos_profile,
+				"ALL_ACTIVE" if barcode_rules is None else barcode_rules,
+			)
+			try:
+				result = _resolve_barcode(barcode, barcode_rules)
+			except Exception:
+				frappe.log_error(
+					title="Barcode Resolver Error",
+					message=f"Error resolving barcode {barcode!r} for profile {pos_profile!r}\n\n{frappe.get_traceback()}",
+				)
+				logger.exception("resolve_barcode: upstream raised for barcode=%r", barcode)
+				result = None
+			if result:
+				return result
 
-	try:
-		from barcode_resolver.barcode_resolver.doctype.barcode_rule.utils import (
-			resolve_barcode as _resolve_barcode,
-		)
-	except ImportError:
-		logger.warning("resolve_barcode: ImportError loading upstream; clearing cache")
-		is_barcode_resolver_available.cache_clear()
-		return None
-
-	barcode_rules = _get_barcode_rules_for_profile(pos_profile)
-	logger.info(
-		"resolve_barcode: barcode=%r profile=%r rules=%s",
-		barcode,
-		pos_profile,
-		"ALL_ACTIVE" if barcode_rules is None else barcode_rules,
-	)
-
-	try:
-		result = _resolve_barcode(barcode, barcode_rules)
-	except Exception:
-		frappe.log_error(
-			title="Barcode Resolver Error",
-			message=f"Error resolving barcode {barcode!r} for profile {pos_profile!r}\n\n{frappe.get_traceback()}",
-		)
-		logger.exception("resolve_barcode: upstream raised for barcode=%r", barcode)
-		return None
-
-	if result is None:
-		logger.info("resolve_barcode: no match for barcode=%r", barcode)
-	else:
+	result = _resolve_standard_weight_barcode(barcode)
+	if result:
 		logger.info(
-			"resolve_barcode: matched barcode=%r -> item_code=%s qty=%s price=%s type=%s",
+			"resolve_barcode: matched standard scale label=%r -> PLU=%s qty=%s kg",
 			barcode,
-			result.get("item_code"),
-			result.get("qty"),
-			result.get("price"),
-			result.get("barcode_type"),
+			result["item_barcode"],
+			result["qty"],
 		)
 	return result
+
+
+def _resolve_standard_weight_barcode(barcode: str) -> BarcodeResult | None:
+	"""Parse a common 13-digit scale label: 2-digit prefix + 5-digit PLU +
+	5-digit weight in 0.001 kg units + EAN-13 check digit.
+
+	Prefixes 20–29 are reserved for variable-measure goods. A valid check digit
+	and a later exact PLU barcode lookup are both required before the POS adds
+	the item, which avoids treating ordinary product barcodes as scale labels.
+	"""
+	if not isinstance(barcode, str) or len(barcode) != 13 or not barcode.isdigit():
+		return None
+
+	prefix = int(barcode[:2])
+	if not 20 <= prefix <= 29:
+		return None
+
+	weighted_sum = sum(int(digit) * (1 if index % 2 == 0 else 3) for index, digit in enumerate(barcode[:12]))
+	check_digit = (10 - weighted_sum % 10) % 10
+	if check_digit != int(barcode[12]):
+		return None
+
+	plu = barcode[2:7]
+	weight_units = int(barcode[7:12])
+	qty = weight_units / 1000
+	if not weight_units:
+		return None
+
+	return {
+		"item_barcode": plu,
+		"integer_value": str(weight_units // 1000),
+		"decimal_value": f"{weight_units % 1000:03d}",
+		"barcode_type": "Weighted",
+		"uom": "Kg",
+		"qty": qty,
+	}
 
 
 def _get_barcode_rules_for_profile(pos_profile: str) -> list[str] | None:
@@ -220,10 +249,8 @@ def compute_resolved_item_data(
 	    ...     item_data = compute_resolved_item_data(resolved, item_rate=10.0)
 	    ...     print(f"Qty: {item_data['resolved_qty']}, UOM: {item_data['resolved_uom']}")
 	"""
-	if not resolved_barcode or not is_barcode_resolver_available():
+	if not resolved_barcode:
 		return None
-
-	from barcode_resolver.barcode_resolver.doctype.barcode_rule.utils import BarcodeTypes
 
 	barcode_type = resolved_barcode.get("barcode_type")
 	barcode_uom = resolved_barcode.get("uom")
@@ -247,7 +274,7 @@ def compute_resolved_item_data(
 	# the parsed value and falling back to reconstructing from segments.
 	encoded_qty = _coerce_value(resolved_barcode, "qty")
 	encoded_price = _coerce_value(resolved_barcode, "price")
-	if barcode_type == BarcodeTypes.WEIGHTED.value:
+	if barcode_type == "Weighted":
 		if encoded_qty is None:
 			logger.warning(
 				"compute_resolved_item_data: weighted barcode missing qty and segments: %s",
@@ -269,7 +296,7 @@ def compute_resolved_item_data(
 			"resolved_price": price,
 			"resolved_barcode_type": barcode_type,
 		}
-	elif barcode_type == BarcodeTypes.PRICED.value:
+	elif barcode_type == "Priced":
 		if encoded_price is None:
 			logger.warning(
 				"compute_resolved_item_data: priced barcode missing price and segments: %s",

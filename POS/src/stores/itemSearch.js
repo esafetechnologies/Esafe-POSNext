@@ -1,7 +1,8 @@
 import { call } from "@/utils/apiWrapper";
 import { isOffline } from "@/utils/offline";
 import { offlineWorker } from "@/utils/offline/workerClient";
-import { updateItemBatchSerialData } from "@/utils/offline/items";
+import { getItemByBarcode, updateItemBatchSerialData } from "@/utils/offline/items";
+import { parseEmbeddedWeightBarcode } from "@/utils/embeddedWeightBarcode";
 import { performanceConfig } from "@/utils/performanceConfig";
 import { logger } from "@/utils/logger";
 import { createResource } from "frappe-ui";
@@ -1864,6 +1865,7 @@ export const useItemSearchStore = defineStore("itemSearch", () => {
 	}
 
 	async function searchByBarcode(barcode) {
+		const parsedWeight = parseEmbeddedWeightBarcode(barcode);
 		try {
 			if (!posProfile.value) {
 				log.error("No POS Profile set in store");
@@ -1878,11 +1880,39 @@ export const useItemSearchStore = defineStore("itemSearch", () => {
 			});
 
 			const item = result?.message || result;
-			return item;
+			if (item) return item;
 		} catch (error) {
 			log.error("Store searchByBarcode error", error);
-			throw error;
 		}
+
+		// The backend resolves scale labels online. If the request is offline,
+		// look up the embedded PLU in IndexedDB and attach the parsed weight.
+		if (parsedWeight) {
+			let item = await getItemByBarcode(parsedWeight.itemBarcode);
+			if (!item) {
+				const cachedItems = await offlineWorker.searchCachedItems(parsedWeight.itemBarcode, 10);
+				item = cachedItems.find((candidate) => candidate.item_code === parsedWeight.itemBarcode);
+			}
+			if (item) {
+				let resolvedQty = parsedWeight.quantity;
+				let resolvedUom = "Kg";
+				if (!item.uom_prices?.Kg && item.stock_uom !== "Kg") {
+					const kgConversion = Number(
+						item.item_uoms?.find((uom) => uom.uom === "Kg")?.conversion_factor || 0
+					);
+					if (!kgConversion) return null;
+					resolvedQty *= kgConversion;
+					resolvedUom = item.stock_uom;
+				}
+				return {
+					...item,
+					resolved_qty: resolvedQty,
+					resolved_uom: resolvedUom,
+					resolved_barcode_type: "Weighted",
+				};
+			}
+		}
+		return null;
 	}
 
 	async function getItem(itemCode) {

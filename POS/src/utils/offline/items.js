@@ -10,16 +10,21 @@ export const cacheItems = async (items, priceList = null) => {
 			const existing = await db.items.bulkGet(items.map((item) => item.item_code));
 
 			// Process items with barcodes
-			const processedItems = items.map((item, index) => ({
-				batch_no_data: existing[index]?.batch_no_data,
-				serial_no_data: existing[index]?.serial_no_data,
-				...item,
-				barcodes: item.item_barcode
-					? Array.isArray(item.item_barcode)
-						? item.item_barcode.map((b) => b.barcode).filter(Boolean)
-						: [item.item_barcode]
-					: [],
-			}));
+			const processedItems = items.map((item, index) => {
+				const itemBarcodes = item.item_barcode || item.barcode || [];
+				const barcodes = Array.isArray(itemBarcodes)
+					? itemBarcodes.map((barcode) => (typeof barcode === "string" ? barcode : barcode.barcode))
+					: String(itemBarcodes)
+							.split(",")
+							.map((barcode) => barcode.trim());
+
+				return {
+					batch_no_data: existing[index]?.batch_no_data,
+					serial_no_data: existing[index]?.serial_no_data,
+					...item,
+					barcodes: barcodes.filter(Boolean),
+				};
+			});
 
 			await db.items.bulkPut(processedItems);
 		});

@@ -133,6 +133,7 @@ Esafe POS is a **complete rewrite** of the ERPNext POS system, built from the gr
 - 🔍 **Smart Search**
   - Real-time item search
   - Barcode scanning support
+  - Embedded-weight scale labels (EAN-13, prefixes 20–29)
   - Item group filtering
   - Keyboard shortcuts (F4, F8, F9)
 
@@ -286,6 +287,12 @@ Visit: `https://your-site.com/pos` or `http://localhost:8000/pos`
 | `F9` | Proceed to checkout |
 | `Ctrl+S` | Save draft (hold order) |
 | `Esc` | Close dialog |
+
+## Embedded-Weight Barcode Setup
+
+Esafe POS accepts common 13-digit scale labels formatted as `prefix + 5-digit PLU + 5-digit weight + check digit`. Prefixes `20`–`29` are accepted, and the weight field is interpreted in thousandths of a kilogram (for example, `00150` means `0.150 kg`).
+
+Add each product's five-digit PLU as an **Item Barcode** in ERPNext. The label's EAN-13 check digit must be valid. Scans work online and can resolve from the local catalog when offline; the product must have been cached on that POS device for offline scans.
 
 ## 🎨 Feature Highlights
 
